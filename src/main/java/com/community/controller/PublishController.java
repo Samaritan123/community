@@ -32,6 +32,11 @@ public class PublishController {
                             @RequestParam("description") String description,
                             @RequestParam("tag") String tag,
                             HttpServletRequest request, Model model) {
+        User user = (User)request.getSession().getAttribute("user");
+        if (user == null) {
+            model.addAttribute("error", "用户未登录");
+            return "publish";
+        }
         model.addAttribute("title", title);
         model.addAttribute("description", description);
         model.addAttribute("tag", tag);
@@ -47,24 +52,6 @@ public class PublishController {
             model.addAttribute("error", "标签不能为空");
             return "publish";
         }
-        User user = null;
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("token")) {
-                    String token = cookie.getValue();
-                    user = userMapper.findByToken(token);
-                    if (user != null) {
-                        request.getSession().setAttribute("user", user);
-                    }
-                    break;
-                }
-            }
-        }
-        if (user == null) {
-            model.addAttribute("error", "用户未登录");
-            return "publish";
-        }
         Question question = new Question();
         question.setTitle(title);
         question.setDescription(description);
@@ -72,6 +59,8 @@ public class PublishController {
         question.setCreator(user.getId());
         question.setGmtCreate(user.getGmtCreate());
         question.setGmtModified(user.getGmtModified());
+        question.setCommentCount(0);
+        question.setViewCount(0);
         questionMapper.create(question);
         return "redirect:/";
     }
