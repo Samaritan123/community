@@ -1,9 +1,11 @@
 package com.community.controller;
 
+import com.community.dto.QuestionDTO;
 import com.community.mapper.QuestionMapper;
 import com.community.mapper.UserMapper;
 import com.community.model.Question;
 import com.community.model.User;
+import com.community.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,9 +19,6 @@ import javax.servlet.http.HttpServletRequest;
 public class PublishController {
 
     @Resource
-    private QuestionMapper questionMapper;
-
-    @Resource
     private UserMapper userMapper;
 
     @GetMapping("/publish")
@@ -27,10 +26,24 @@ public class PublishController {
         return "publish";
     }
 
+    @Resource
+    private QuestionService questionService;
+
+    @GetMapping("/publish/{id}")
+    public String edit(@PathVariable(name="id") Long id, Model model) {
+        QuestionDTO question = questionService.getById(id);
+        model.addAttribute("title", question.getTitle());
+        model.addAttribute("description", question.getDescription());
+        model.addAttribute("tag", question.getTag());
+        model.addAttribute("id", question.getId());
+        return "publish";
+    }
+
     @PostMapping("/publish")
     public String doPublish(@RequestParam("title") String title,
                             @RequestParam("description") String description,
                             @RequestParam("tag") String tag,
+                            @RequestParam(value = "id", required = false) Long id,
                             HttpServletRequest request, Model model) {
         User user = (User)request.getSession().getAttribute("user");
         if (user == null) {
@@ -57,11 +70,10 @@ public class PublishController {
         question.setDescription(description);
         question.setTag(tag);
         question.setCreator(user.getId());
-        question.setGmtCreate(user.getGmtCreate());
-        question.setGmtModified(user.getGmtModified());
-        question.setCommentCount(0);
-        question.setViewCount(0);
-        questionMapper.create(question);
+//        question.setCommentCount(0);
+//        question.setViewCount(0);
+        question.setId(id);
+        questionService.createOrUpdate(question);
         return "redirect:/";
     }
 }
