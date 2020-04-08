@@ -1,11 +1,13 @@
 package com.community.controller;
 
+import com.community.cache.TagCache;
 import com.community.dto.QuestionDTO;
 import com.community.mapper.QuestionMapper;
 import com.community.mapper.UserMapper;
 import com.community.model.Question;
 import com.community.model.User;
 import com.community.service.QuestionService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,13 +23,14 @@ public class PublishController {
     @Resource
     private UserMapper userMapper;
 
-    @GetMapping("/publish")
-    public String Publish() {
-        return "publish";
-    }
-
     @Resource
     private QuestionService questionService;
+
+    @GetMapping("/publish")
+    public String publish(Model model) {
+        model.addAttribute("tags", TagCache.get());
+        return "publish";
+    }
 
     @GetMapping("/publish/{id}")
     public String edit(@PathVariable(name="id") Long id, Model model) {
@@ -36,6 +39,7 @@ public class PublishController {
         model.addAttribute("description", question.getDescription());
         model.addAttribute("tag", question.getTag());
         model.addAttribute("id", question.getId());
+        model.addAttribute("tags", TagCache.get());
         return "publish";
     }
 
@@ -53,6 +57,7 @@ public class PublishController {
         model.addAttribute("title", title);
         model.addAttribute("description", description);
         model.addAttribute("tag", tag);
+        model.addAttribute("tags", TagCache.get());
         if (title == null || title == "") {
             model.addAttribute("error", "标题不能为空");
             return "publish";
@@ -63,6 +68,11 @@ public class PublishController {
         }
         if (tag == null || tag == "") {
             model.addAttribute("error", "标签不能为空");
+            return "publish";
+        }
+        String invalid = TagCache.filterInvalid(tag);
+        if (StringUtils.isNotBlank(invalid)) {
+            model.addAttribute("error", "输入非法标签"+invalid);
             return "publish";
         }
         Question question = new Question();
